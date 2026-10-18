@@ -228,20 +228,23 @@ func (r *ApmRetentionFilterResource) Delete(ctx context.Context, request resourc
 	}
 }
 
+// stringPrecision returns the number of decimals in a numeric string, or -1 if it has none.
+func stringPrecision(val string) int {
+	if i := strings.IndexByte(val, '.'); i > -1 {
+		return len(val) - i - 1
+	}
+	return -1
+}
+
 func (r *ApmRetentionFilterResource) updateState(ctx context.Context, state *ApmRetentionFilterModel, dataId string, name string, rate float64, hasTraceRate bool, traceRate float64, query string, enabled bool, filterType string) {
 	state.ID = types.StringValue(dataId)
 	state.Name = types.StringValue(name)
 
 	// Make sure we maintain the same precision as config
 	// Otherwise we will run into inconsistent state errors
-	configVal := state.Rate.ValueString()
-	precision := -1
-	if i := strings.IndexByte(configVal, '.'); i > -1 {
-		precision = len(configVal) - i - 1
-	}
-	state.Rate = types.StringValue(strconv.FormatFloat(rate, 'f', precision, 64))
+	state.Rate = types.StringValue(strconv.FormatFloat(rate, 'f', stringPrecision(state.Rate.ValueString()), 64))
 	if hasTraceRate && traceRate > 0 {
-		state.TraceRate = types.StringValue(strconv.FormatFloat(traceRate, 'f', precision, 64))
+		state.TraceRate = types.StringValue(strconv.FormatFloat(traceRate, 'f', stringPrecision(state.TraceRate.ValueString()), 64))
 	} else {
 		state.TraceRate = types.StringNull()
 	}
